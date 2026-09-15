@@ -8,6 +8,8 @@ Usage:
 
 import json
 import sys
+import time
+import urllib.error
 import urllib.parse
 import urllib.request
 
@@ -16,10 +18,18 @@ API_ROOT = "https://musicbrainz.org/ws/2"
 USER_AGENT = "duo-nas-music-export/0.1 (https://github.com/dli1986/duo-li)"
 
 
-def _get(url: str) -> dict:
+def _get(url: str, retries: int = 5) -> dict:
     req = urllib.request.Request(url, headers={"User-Agent": USER_AGENT})
-    with urllib.request.urlopen(req) as resp:
-        return json.load(resp)
+    for attempt in range(retries):
+        try:
+            with urllib.request.urlopen(req) as resp:
+                return json.load(resp)
+        except urllib.error.HTTPError as exc:
+            # MusicBrainz returns 503 "server is currently busy" under load — transient, not a rate-limit block.
+            if exc.code == 503 and attempt < retries - 1:
+                time.sleep(2 * (attempt + 1))
+                continue
+            raise
 
 
 def search_recording(artist: str, title: str) -> list[dict]:
