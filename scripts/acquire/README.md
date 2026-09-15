@@ -6,13 +6,19 @@ Never re-expose the acquired full tracks to the public `duo-li` website — priv
 
 ## Usage
 
+Uses its own virtual environment (`duo-nas/.venv`), same convention as the other WSL projects (`nanoGPT-learning`, `llama2.c`):
+
 ```bash
-pip install -r requirements.txt
-cd ../..              # run from duo-nas/ root so output lands in ./music/
+cd ~/duo-nas                     # native WSL filesystem, not /mnt/c
+python3 -m venv .venv            # first time only
+source .venv/bin/activate
+pip install -r scripts/acquire/requirements.txt
 python scripts/acquire/acquire.py "<url>"
 ```
 
-Downloads the best available audio track, converts to mp3 (VBR 0), embeds metadata + thumbnail as ID3 tags.
+Also requires `ffmpeg` on PATH (system package, not pip-installed) for audio extraction — already present on this WSL Ubuntu image.
+
+Downloads the best available audio track, converts to mp3 (VBR 0), embeds metadata + thumbnail as ID3 tags, saves into `./music/`.
 
 ## Known caveat
 
