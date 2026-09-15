@@ -7,7 +7,7 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set a password in .env}
       POSTGRES_DB: ${POSTGRES_DB:-duonas}
     volumes:
-      - ./data/postgres:/var/lib/postgresql/data
+      - ${DUONAS_STATE_DIR:-./data}/postgres:/var/lib/postgresql/data
     ports:
       - "127.0.0.1:5433:5432" # loopback only, non-default host port (5432 already used by another project's container)
 
@@ -21,5 +21,5 @@ services:
     ports:
       - "127.0.0.1:4533:4533" # loopback only — reach it over Tailscale, not the public internet
     volumes:
-      - ./data/navidrome:/data
-      - ./music:/music:ro
+      - ${DUONAS_STATE_DIR:-./data}/navidrome:/data
+      - ${DUONAS_MUSIC_DIR:-./music}:/music:ro

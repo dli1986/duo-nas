@@ -36,6 +36,50 @@ No API from this repo is ever called by a website visitor's browser. No database
 - `scripts/export-photos/` — RAW → optimized WebP/AVIF thumbnails + EXIF/XMP-preserving originals, pushed to R2
 - `scripts/export-music/` — pulls metadata from MusicBrainz / Discogs / ListenBrainz for cataloged tracks, writes `content/music/*.mdx` for the `duo-li` repo (catalog entries are metadata-only and don't require a matching playable file)
 
+## What real NAS hardware actually needs to run this
+
+Just an OS + Docker + Docker Compose. That's it. Everything stateful (Postgres data, Navidrome index, the actual music/photo files) lives under `DUONAS_STATE_DIR` / `DUONAS_MUSIC_DIR` (see `.env`), which you point at an external/attached drive — the drive is the only thing that has to be "big." The compute side (this repo, the containers) is intentionally tiny and disposable: if the box dies, a fresh OS + `git clone` + `docker compose up` on new hardware gets you back to where you were, as long as the external drive survives. That's the whole point of separating state (drive) from compute (containers) — see the Gemini-derived design notes in project memory for the fuller reasoning.
+
+## Setup on a new machine
+
+Starting point: any machine with Docker + Docker Compose installed (Docker Desktop, Rancher Desktop, or a bare Linux install with `docker` + the `compose` plugin all work identically — this repo doesn't care which).
+
+```bash
+git clone https://github.com/dli1986/duo-nas.git
+cd duo-nas
+
+cp .env.example .env
+# edit .env:
+#   - set a real POSTGRES_PASSWORD
+#   - if you have an external drive mounted, point DUONAS_STATE_DIR / DUONAS_MUSIC_DIR at it
+#     (e.g. DUONAS_MUSIC_DIR=/mnt/usb1/music) — otherwise leave the ./data, ./music defaults
+
+docker compose up -d
+```
+
+First-run admin setup (one-time, per machine): open `http://localhost:4533`, create the Navidrome admin account through the web UI (no CLI flow for this — it's a one-screen form).
+
+For the acquisition/export scripts (Python), same convention on every machine — a dedicated venv, never system-wide pip:
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate          # Windows: .venv\Scripts\activate
+pip install -r scripts/acquire/requirements.txt
+```
+
+Also needs `ffmpeg` on PATH (system package — `apt install ffmpeg` / `brew install ffmpeg`, not pip).
+
+### Running under WSL2 (if Docker only runs inside a WSL distro, e.g. Rancher Desktop)
+
+Clone this repo a second time *inside* the WSL distro's own native filesystem (e.g. `~/duo-nas`), not under `/mnt/c/...` — bind-mounting a Windows path into Docker volumes has real I/O overhead for things like Postgres. The Windows-side checkout stays the "authoring" copy (edit + commit there); the WSL-native checkout is the "runtime" copy:
+
+```bash
+# inside the WSL distro
+git clone /mnt/c/path/to/duo-nas ~/duo-nas   # or the GitHub URL directly
+cd ~/duo-nas && git pull                     # re-run this after every commit on the Windows side
+```
+
 ## Status
 
-Scaffold only — nothing is running yet. Being built incrementally.
+Running (on the current dev machine, WSL): Postgres + Navidrome, both `127.0.0.1`-only. One real track acquired via `scripts/acquire/acquire.py`, imported into Navidrome, playback verified. `scripts/export-music/musicbrainz_lookup.py` verified against the live MusicBrainz API. Photo pipeline and Postgres schema/usage: not started yet.
+
