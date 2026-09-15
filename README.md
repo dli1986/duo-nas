@@ -16,7 +16,8 @@ They don't, at runtime. The only handoff is **exported artifacts**:
 
 ```
 duo-nas (private, local)                    duo-li (public, Vercel)
-├─ originals (RAW photos, FLAC/audio)
+├─ originals (music/, photos-originals/ — local-only, gitignored, never synced
+│  to any cloud service, incl. corporate OneDrive/Drive/iCloud)
 ├─ Postgres (metadata, relationships)
 └─ export scripts
         │
@@ -32,9 +33,9 @@ No API from this repo is ever called by a website visitor's browser. No database
 ## Planned components (not all built yet)
 
 - `docker-compose.yml` — Postgres (metadata) + Navidrome (private streaming for personal/family use only)
-- `scripts/acquire/` — yt-dlp-based audio acquisition helpers (private archive only, never re-exposed publicly as full tracks)
-- `scripts/export-photos/` — RAW → optimized WebP/AVIF thumbnails + EXIF/XMP-preserving originals, pushed to R2
-- `scripts/export-music/` — pulls metadata from MusicBrainz / Discogs / ListenBrainz for cataloged tracks, writes `content/music/*.mdx` for the `duo-li` repo (catalog entries are metadata-only and don't require a matching playable file)
+- `scripts/acquire/` — yt-dlp-based audio acquisition helpers (private archive only, never re-exposed publicly as full tracks), saves originals into `music/`
+- `scripts/export-photos/` — built: reads a photo from `photos-originals/` (local-only originals, see that folder's README note), extracts EXIF, generates an optimized WebP thumbnail (no originals ever uploaded), pushes it to Cloudflare R2, writes `content/photos/*.mdx` for the `duo-li` repo
+- `scripts/export-music/` — pulls metadata from MusicBrainz for cataloged tracks, writes `content/music/*.mdx` for the `duo-li` repo (catalog entries are metadata-only and don't require a matching playable file)
 
 ## What real NAS hardware actually needs to run this
 
@@ -103,5 +104,5 @@ cd ~/duo-nas && git pull                     # re-run this after every commit on
 
 ## Status
 
-Running (on the current dev machine, WSL): Postgres + Navidrome, both `127.0.0.1`-only. One real track acquired via `scripts/acquire/acquire.py`, imported into Navidrome, playback verified. `scripts/export-music/musicbrainz_lookup.py` verified against the live MusicBrainz API. Photo pipeline and Postgres schema/usage: not started yet.
+Running (on the current dev machine, WSL): Postgres + Navidrome, both `127.0.0.1`-only. One real track acquired via `scripts/acquire/acquire.py`, imported into Navidrome, playback verified. `scripts/export-music/musicbrainz_lookup.py` verified against the live MusicBrainz API. `scripts/export-photos/upload_photo.py` verified end-to-end (EXIF extract → WebP thumbnail → Cloudflare R2 upload → MDX written into `duo-li`) with one real photo. Postgres schema/usage beyond Navidrome's own tables: not started yet.
 

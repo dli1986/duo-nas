@@ -4,6 +4,8 @@
 # actual media — lives here locally, never committed
 /music/
 /photos/
+/photos-originals/*
+!/photos-originals/.gitkeep
 
 # secrets
 .env

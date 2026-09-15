@@ -8,6 +8,17 @@ and writes the corresponding `content/photos/<slug>.mdx` file into the sibling
 No "download original" feature is provided or planned — only the resized WebP
 thumbnail ever leaves this machine.
 
+## Where to keep original photos
+
+Keep full-resolution source photos in `duo-nas/photos-originals/` (gitignored,
+local-only — the same convention as `duo-nas/music/` for original audio).
+**Do not** use a folder that syncs to any cloud service (OneDrive, Google
+Drive, iCloud, etc.), especially a work/corporate-managed account — that
+defeats the point of "only the thumbnail ever leaves this machine" by handing
+the original to that cloud provider instead. `photos-originals/` is just a
+plain local folder with no upload/sync of its own; treat it as this machine's
+"NAS" storage for photos, same role `music/` plays for audio.
+
 ## Setup
 
 ```bash
