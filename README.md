@@ -82,15 +82,22 @@ docker compose up -d
 
 First-run admin setup (one-time, per machine): open `http://localhost:4533`, create the Navidrome admin account through the web UI (no CLI flow for this — it's a one-screen form).
 
-For the acquisition/export scripts (Python), same convention on every machine — a dedicated venv, never system-wide pip:
+For the acquisition/export scripts (Python), same convention on every machine — one dedicated venv for the whole repo, never system-wide pip and never a separate venv per script folder:
 
 ```bash
 python3 -m venv .venv
 source .venv/bin/activate          # Windows: .venv\Scripts\activate
-pip install -r scripts/acquire/requirements.txt
+pip install -r requirements.txt
 ```
 
 Also needs `ffmpeg` on PATH (system package — `apt install ffmpeg` / `brew install ffmpeg`, not pip).
+
+**Windows-side note**: other projects on this machine historically share one large venv
+(`C:\Users\dli\Projects\MyTest\MyTest\Scripts\activate.bat`) — that's a pre-existing
+convention from before this repo existed and isn't being changed globally right now, but
+`duo-nas` itself always uses its own repo-root `.venv` per the above, kept consistent with
+the WSL side. Don't install this repo's dependencies into the shared `MyTest` venv, and
+don't create ad-hoc venvs inside individual `scripts/*` subfolders.
 
 ### Running under WSL2 (if Docker only runs inside a WSL distro, e.g. Rancher Desktop)
 
@@ -104,5 +111,5 @@ cd ~/duo-nas && git pull                     # re-run this after every commit on
 
 ## Status
 
-Running (on the current dev machine, WSL): Postgres + Navidrome, both `127.0.0.1`-only. One real track acquired via `scripts/acquire/acquire.py`, imported into Navidrome, playback verified. `scripts/export-music/musicbrainz_lookup.py` verified against the live MusicBrainz API. `scripts/export-photos/upload_photo.py` verified end-to-end (EXIF extract → WebP thumbnail → Cloudflare R2 upload → MDX written into `duo-li`) with one real photo. Postgres schema/usage beyond Navidrome's own tables: not started yet.
+Running (on the current dev machine, WSL): Postgres + Navidrome, both `127.0.0.1`-only. One real track acquired via `scripts/acquire/acquire.py`, imported into Navidrome, playback verified. `scripts/export-music/musicbrainz_lookup.py` verified against the live MusicBrainz API. `scripts/export-photos/upload_photo.py` verified end-to-end (EXIF extract → WebP thumbnail → Cloudflare R2 upload → MDX written into `duo-li`) with one real photo. Both Windows and WSL sides now use a single repo-root `.venv` (`pip install -r requirements.txt`) — no more per-script venvs. Postgres schema/usage beyond Navidrome's own tables: not started yet.
 

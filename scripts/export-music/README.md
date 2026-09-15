@@ -6,9 +6,10 @@ Catalog entries here are metadata-only by design — they reflect what the owner
 
 ## Usage
 
+Uses the same repo-root venv as every other script under `scripts/` — see root README's Setup section.
+
 ```bash
-source ../../.venv/bin/activate
-pip install -r requirements.txt   # first time only — adds opencc for the script-variant retry
+source ../../.venv/bin/activate   # Windows: ..\..\.venv\Scripts\activate
 
 # just look up and print, no file written
 python musicbrainz_lookup.py "辛晓琪" "两两相忘"

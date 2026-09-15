@@ -21,11 +21,13 @@ plain local folder with no upload/sync of its own; treat it as this machine's
 
 ## Setup
 
+Uses the same repo-root venv as every other script under `scripts/` (do **not** create a separate venv in this folder — see root README's Setup section):
+
 ```bash
-cd scripts/export-photos
-python3 -m venv .venv
+cd ../..                    # duo-nas repo root
 source .venv/bin/activate   # or .venv\Scripts\activate on Windows
-pip install -r requirements.txt
+pip install -r requirements.txt   # first time only
+cd scripts/export-photos
 ```
 
 Fill in the R2 section of `duo-nas/.env` (copy from `.env.example` if you

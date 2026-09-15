@@ -1,0 +1,6 @@
+# Single project-level dependency list for all scripts/ under duo-nas.
+# One venv, one install, works for acquire/, export-music/, export-photos/.
+yt-dlp
+opencc-python-reimplemented
+boto3
+Pillow

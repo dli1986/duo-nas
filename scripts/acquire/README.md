@@ -6,13 +6,13 @@ Never re-expose the acquired full tracks to the public `duo-li` website — priv
 
 ## Usage
 
-Uses its own virtual environment (`duo-nas/.venv`), same convention as the other WSL projects (`nanoGPT-learning`, `llama2.c`):
+Uses the single project-level virtual environment at the repo root (`duo-nas/.venv`), same convention as the other WSL projects (`nanoGPT-learning`, `llama2.c`) — one venv for all of `scripts/`, not one per script folder:
 
 ```bash
 cd ~/duo-nas                     # native WSL filesystem, not /mnt/c
 python3 -m venv .venv            # first time only
 source .venv/bin/activate
-pip install -r scripts/acquire/requirements.txt
+pip install -r requirements.txt
 python scripts/acquire/acquire.py "<url>"
 ```
 

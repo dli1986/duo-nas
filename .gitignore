@@ -1,9 +1,12 @@
-# local data volumes (Postgres, Navidrome index/cache)
-/data/
+# local data volumes (Postgres, Navidrome index/cache) — populated by docker compose
+/data/*
+!/data/.gitkeep
 
 # actual media — lives here locally, never committed
-/music/
-/photos/
+/music/*
+!/music/.gitkeep
+/photos/*
+!/photos/.gitkeep
 /photos-originals/*
 !/photos-originals/.gitkeep
 
