@@ -9,7 +9,7 @@ services:
     volumes:
       - ./data/postgres:/var/lib/postgresql/data
     ports:
-      - "127.0.0.1:5432:5432" # loopback only — never bind 0.0.0.0
+      - "127.0.0.1:5433:5432" # loopback only, non-default host port (5432 already used by another project's container)
 
   navidrome:
     image: deluan/navidrome:latest
