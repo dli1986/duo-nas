@@ -42,7 +42,7 @@ def search_recording(artist: str, title: str) -> list[dict]:
 
 def recording_detail(mbid: str) -> dict:
     url = f"{API_ROOT}/recording/{mbid}?" + urllib.parse.urlencode(
-        {"inc": "work-rels+artist-rels+releases", "fmt": "json"}
+        {"inc": "artist-credits+work-rels+artist-rels+releases", "fmt": "json"}
     )
     return _get(url)
 
