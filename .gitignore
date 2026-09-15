@@ -1,0 +1,13 @@
+# local data volumes (Postgres, Navidrome index/cache)
+/data/
+
+# actual media — lives here locally, never committed
+/music/
+/photos/
+
+# secrets
+.env
+
+# OS/editor cruft
+.DS_Store
+Thumbs.db

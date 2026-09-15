@@ -1,0 +1,25 @@
+services:
+  postgres:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-duonas}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set a password in .env}
+      POSTGRES_DB: ${POSTGRES_DB:-duonas}
+    volumes:
+      - ./data/postgres:/var/lib/postgresql/data
+    ports:
+      - "127.0.0.1:5432:5432" # loopback only — never bind 0.0.0.0
+
+  navidrome:
+    image: deluan/navidrome:latest
+    restart: unless-stopped
+    environment:
+      ND_SCANSCHEDULE: "@every 1h"
+      ND_LOGLEVEL: info
+      ND_SESSIONTIMEOUT: 24h
+    ports:
+      - "127.0.0.1:4533:4533" # loopback only — reach it over Tailscale, not the public internet
+    volumes:
+      - ./data/navidrome:/data
+      - ./music:/music:ro
