@@ -16,9 +16,10 @@ They don't, at runtime. The only handoff is **exported artifacts**:
 
 ```
 duo-nas (private, local)                    duo-li (public, Vercel)
-├─ originals (music/, photos-originals/ — local-only, gitignored, never synced
+├─ originals (music/, photos/ — local-only, gitignored, never synced
 │  to any cloud service, incl. corporate OneDrive/Drive/iCloud)
-├─ Postgres (metadata, relationships)
+├─ generated (photos-generated/ — thumbnails, local working copy before R2 upload)
+├─ state/ (Postgres, Navidrome index/cache)
 └─ export scripts
         │
         ├─► optimized thumbnails/audio  ──►  Cloudflare R2 (public CDN)
@@ -34,7 +35,7 @@ No API from this repo is ever called by a website visitor's browser. No database
 
 - `docker-compose.yml` — Postgres (metadata) + Navidrome (private streaming for personal/family use only)
 - `scripts/acquire/` — yt-dlp-based audio acquisition helpers (private archive only, never re-exposed publicly as full tracks), saves originals into `music/`
-- `scripts/export-photos/` — built: reads a photo from `photos-originals/` (local-only originals, see that folder's README note), extracts EXIF, generates an optimized WebP thumbnail (no originals ever uploaded), pushes it to Cloudflare R2, writes `content/photos/*.mdx` for the `duo-li` repo
+- `scripts/export-photos/` — built: reads a photo from `photos/` (local-only originals, see that folder's README note), extracts EXIF, generates an optimized WebP thumbnail into `photos-generated/` (no originals ever uploaded), pushes it to Cloudflare R2, writes `content/photos/*.mdx` for the `duo-li` repo
 - `scripts/export-music/` — pulls metadata from MusicBrainz for cataloged tracks, writes `content/music/*.mdx` for the `duo-li` repo (catalog entries are metadata-only and don't require a matching playable file)
 
 ## What real NAS hardware actually needs to run this
@@ -75,7 +76,7 @@ cp .env.example .env
 # edit .env:
 #   - set a real POSTGRES_PASSWORD
 #   - if you have an external drive mounted, point DUONAS_STATE_DIR / DUONAS_MUSIC_DIR at it
-#     (e.g. DUONAS_MUSIC_DIR=/mnt/usb1/music) — otherwise leave the ./data, ./music defaults
+#     (e.g. DUONAS_MUSIC_DIR=/mnt/usb1/music) — otherwise leave the ./state, ./music defaults
 
 docker compose up -d
 ```

@@ -10,14 +10,18 @@ thumbnail ever leaves this machine.
 
 ## Where to keep original photos
 
-Keep full-resolution source photos in `duo-nas/photos-originals/` (gitignored,
-local-only — the same convention as `duo-nas/music/` for original audio).
-**Do not** use a folder that syncs to any cloud service (OneDrive, Google
-Drive, iCloud, etc.), especially a work/corporate-managed account — that
-defeats the point of "only the thumbnail ever leaves this machine" by handing
-the original to that cloud provider instead. `photos-originals/` is just a
-plain local folder with no upload/sync of its own; treat it as this machine's
-"NAS" storage for photos, same role `music/` plays for audio.
+Keep full-resolution source photos in `duo-nas/photos/` (gitignored,
+local-only — mirrors `duo-nas/music/` for original audio: bare folder name =
+the original-media library). **Do not** use a folder that syncs to any cloud
+service (OneDrive, Google Drive, iCloud, etc.), especially a work/corporate-
+managed account — that defeats the point of "only the thumbnail ever leaves
+this machine" by handing the original to that cloud provider instead.
+`photos/` is just a plain local folder with no upload/sync of its own; treat
+it as this machine's "NAS" storage for photos.
+
+Generated WebP thumbnails are written to `duo-nas/photos-generated/`
+(also gitignored) — kept in a separate folder so originals and derived
+output never mix.
 
 ## Setup
 
@@ -58,8 +62,10 @@ This will:
 1. Read EXIF (camera, lens, date, focal length, aperture, shutter speed, ISO)
    from the source file.
 2. Resize to a max dimension of 2400px and re-encode as WebP (quality 82),
-   written locally to `photos/<slug>.webp` (gitignored — working file only).
-3. Upload the WebP to `R2_BUCKET` under key `photos/<slug>.webp` via the
+   written locally to `photos-generated/<slug>.webp` (gitignored — working
+   file only, not the same folder as the originals).
+3. Upload the WebP to `R2_BUCKET` under key `photos/<slug>.webp` (R2's own
+   key namespace — unrelated to the local folder names above) via the
    S3-compatible API, and build the public URL from `R2_PUBLIC_URL`.
 4. Write `../../../duo-li/content/photos/<slug>.mdx` with a frontmatter
    matching `PhotoFrontmatter` in duo-li's `src/lib/photos.ts`. Refuses to

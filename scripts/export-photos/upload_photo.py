@@ -229,7 +229,7 @@ def main() -> None:
     for key, value in exif.items():
         print(f"  {key}: {value}")
 
-    thumbnail_path = REPO_ROOT / "photos" / f"{args.slug}.webp"
+    thumbnail_path = REPO_ROOT / "photos-generated" / f"{args.slug}.webp"
     print(f"Generating thumbnail (max {MAX_DIMENSION}px, WebP q={WEBP_QUALITY}) -> {thumbnail_path}")
     make_thumbnail(args.photo_path, thumbnail_path)
 
