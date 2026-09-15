@@ -38,6 +38,15 @@ No API from this repo is ever called by a website visitor's browser. No database
 - `scripts/export-photos/` — built: reads a photo from `photos/` (local-only originals, see that folder's README note), extracts EXIF, generates an optimized WebP thumbnail into `photos-generated/` (no originals ever uploaded), pushes it to Cloudflare R2, writes `content/photos/*.mdx` for the `duo-li` repo
 - `scripts/export-music/` — pulls metadata from MusicBrainz for cataloged tracks, writes `content/music/*.mdx` for the `duo-li` repo (catalog entries are metadata-only and don't require a matching playable file)
 
+## Local directories (all gitignored, machine-specific)
+
+| Directory | Holds | Regenerable? |
+|---|---|---|
+| `state/` | Postgres DB files (`state/postgres`) + Navidrome's own index/cache/transcode-cache (`state/navidrome`). Bind-mounted into the containers via `DUONAS_STATE_DIR` in `docker-compose.yml`. | Yes — Navidrome rebuilds its index by rescanning `music/`; Postgres holds nothing important yet (see Status below). Safe to delete while containers are stopped if you want a clean slate. |
+| `music/` | Original acquired audio files (mp3) — the actual library Navidrome serves, mounted read-only via `DUONAS_MUSIC_DIR`. | No — these are the source files themselves, not derived from anything. |
+| `photos/` | Original full-resolution photos — source material for the photography pipeline. Mirrors `music/`'s role (bare name = original-media library). | No — source files. |
+| `photos-generated/` | Generated WebP thumbnails (`scripts/export-photos/upload_photo.py` output), before/after upload to R2. | Yes — regenerate by re-running the script against the matching file in `photos/`. |
+
 ## What real NAS hardware actually needs to run this
 
 Just an OS + Docker + Docker Compose. That's it. Everything stateful (Postgres data, Navidrome index, the actual music/photo files) lives under `DUONAS_STATE_DIR` / `DUONAS_MUSIC_DIR` (see `.env`), which you point at an external/attached drive — the drive is the only thing that has to be "big." The compute side (this repo, the containers) is intentionally tiny and disposable: if the box dies, a fresh OS + `git clone` + `docker compose up` on new hardware gets you back to where you were, as long as the external drive survives. That's the whole point of separating state (drive) from compute (containers) — see the Gemini-derived design notes in project memory for the fuller reasoning.
