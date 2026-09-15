@@ -10,6 +10,7 @@ Usage:
 
 import argparse
 import json
+import os
 import sys
 import time
 import urllib.error
@@ -31,7 +32,22 @@ API_ROOT = "https://musicbrainz.org/ws/2"
 USER_AGENT = "duo-nas-music-export/0.1 (https://github.com/dli1986/duo-li)"
 
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent
-DUO_LI_MUSIC_DIR = REPO_ROOT.parent / "duo-li" / "content" / "music"
+
+
+def _resolve_duo_li_dir() -> Path:
+    # Local clone folder name doesn't match the GitHub repo name (duo-li) on this machine —
+    # override with DUO_LI_REPO_DIR if your setup differs.
+    override = os.environ.get("DUO_LI_REPO_DIR")
+    if override:
+        return Path(override)
+    for candidate in ("Duo-digital-garden", "duo-li"):
+        path = REPO_ROOT.parent / candidate
+        if (path / "package.json").exists():
+            return path
+    return REPO_ROOT.parent / "duo-li"
+
+
+DUO_LI_MUSIC_DIR = _resolve_duo_li_dir() / "content" / "music"
 
 
 def _get(url: str, retries: int = 5) -> dict:

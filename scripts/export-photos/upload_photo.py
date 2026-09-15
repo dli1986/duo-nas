@@ -28,7 +28,22 @@ import boto3
 from PIL import ExifTags, Image
 
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent
-DUO_LI_PHOTOS_DIR = REPO_ROOT.parent / "duo-li" / "content" / "photos"
+
+
+def _resolve_duo_li_dir() -> Path:
+    # Local clone folder name doesn't match the GitHub repo name (duo-li) on this machine —
+    # override with DUO_LI_REPO_DIR if your setup differs.
+    override = os.environ.get("DUO_LI_REPO_DIR")
+    if override:
+        return Path(override)
+    for candidate in ("Duo-digital-garden", "duo-li"):
+        path = REPO_ROOT.parent / candidate
+        if (path / "package.json").exists():
+            return path
+    return REPO_ROOT.parent / "duo-li"
+
+
+DUO_LI_PHOTOS_DIR = _resolve_duo_li_dir() / "content" / "photos"
 
 MAX_DIMENSION = 2400
 WEBP_QUALITY = 82
@@ -161,21 +176,26 @@ def write_mdx(slug: str, title: str, image_url: str, exif: dict[str, str], locat
     if dest.exists():
         raise FileExistsError(f"{dest} already exists, refusing to overwrite")
 
+    def _yaml_str(value: str) -> str:
+        # JSON string syntax is valid YAML flow-scalar syntax too — cheap, correct escaping
+        # without a YAML-writing dependency. ensure_ascii=False keeps CJK text readable.
+        return json.dumps(value, ensure_ascii=False)
+
     frontmatter_lines = [
         "---",
-        f"title: {json.dumps(title)}",
-        f"slug: {json.dumps(slug)}",
+        f"title: {_yaml_str(title)}",
+        f"slug: {_yaml_str(slug)}",
     ]
     resolved_date = date_taken or exif.get("dateTaken")
     if resolved_date:
-        frontmatter_lines.append(f"dateTaken: {json.dumps(resolved_date)}")
+        frontmatter_lines.append(f"dateTaken: {_yaml_str(resolved_date)}")
     if location:
-        frontmatter_lines.append(f"location: {json.dumps(location)}")
+        frontmatter_lines.append(f"location: {_yaml_str(location)}")
     for key in ("camera", "lens", "focalLength", "aperture", "shutterSpeed", "iso"):
         if exif.get(key):
-            frontmatter_lines.append(f"{key}: {json.dumps(exif[key])}")
-    frontmatter_lines.append(f"tags: [{', '.join(json.dumps(t) for t in tags)}]")
-    frontmatter_lines.append(f"imageUrl: {json.dumps(image_url)}")
+            frontmatter_lines.append(f"{key}: {_yaml_str(exif[key])}")
+    frontmatter_lines.append(f"tags: [{', '.join(_yaml_str(t) for t in tags)}]")
+    frontmatter_lines.append(f"imageUrl: {_yaml_str(image_url)}")
     frontmatter_lines.append("---")
     frontmatter_lines.append("")
 
