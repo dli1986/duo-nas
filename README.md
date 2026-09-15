@@ -40,6 +40,28 @@ No API from this repo is ever called by a website visitor's browser. No database
 
 Just an OS + Docker + Docker Compose. That's it. Everything stateful (Postgres data, Navidrome index, the actual music/photo files) lives under `DUONAS_STATE_DIR` / `DUONAS_MUSIC_DIR` (see `.env`), which you point at an external/attached drive — the drive is the only thing that has to be "big." The compute side (this repo, the containers) is intentionally tiny and disposable: if the box dies, a fresh OS + `git clone` + `docker compose up` on new hardware gets you back to where you were, as long as the external drive survives. That's the whole point of separating state (drive) from compute (containers) — see the Gemini-derived design notes in project memory for the fuller reasoning.
 
+## Directory layout: clone `duo-li` as a sibling
+
+Export scripts write into the `duo-li` site repo (`content/music/*.mdx`, `content/knowledge/*.mdx`, optimized photos, etc.), so they assume a fixed relative layout — both repos cloned side by side under the same parent directory:
+
+```
+some-parent-dir/
+├── duo-nas/    (this repo)
+└── duo-li/     (github.com/dli1986/duo-li — the Next.js site)
+```
+
+On the current dev machine this looks like:
+
+```
+Windows: C:\Users\dli\Projects\MyTest\duo-nas          (authoring copy, no docker/python run here)
+         C:\Users\dli\Projects\MyTest\Duo-digital-garden (authoring copy of duo-li)
+
+WSL:     ~/duo-nas   (runtime copy — origin = the Windows duo-nas path)
+         ~/duo-li    (runtime copy — origin = the Windows Duo-digital-garden path)
+```
+
+Both WSL copies sync the same way: `git pull` from their `origin` (the Windows-side path), then re-run whatever needs re-running (`docker compose up -d`, an export script, etc.). Setting up a fresh machine? Clone both repos next to each other first, under whatever name you like, as long as they're siblings — the export scripts use a relative path (`../duo-li/content/...`) to reach the site repo, they don't hardcode any absolute path.
+
 ## Setup on a new machine
 
 Starting point: any machine with Docker + Docker Compose installed (Docker Desktop, Rancher Desktop, or a bare Linux install with `docker` + the `compose` plugin all work identically — this repo doesn't care which).
