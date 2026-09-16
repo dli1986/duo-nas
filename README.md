@@ -19,7 +19,7 @@ duo-nas (private, local)                    duo-li (public, Vercel)
 ├─ originals (music/, photos/ — local-only, gitignored, never synced
 │  to any cloud service, incl. corporate OneDrive/Drive/iCloud)
 ├─ generated (photos-generated/ — thumbnails, local working copy before R2 upload)
-├─ state/ (Postgres, Navidrome index/cache)
+├─ Docker named volumes (Postgres, Navidrome index/cache — not host folders, see below)
 └─ export scripts
         │
         ├─► optimized thumbnails/audio  ──►  Cloudflare R2 (public CDN)
@@ -42,14 +42,32 @@ No API from this repo is ever called by a website visitor's browser. No database
 
 | Directory | Holds | Regenerable? |
 |---|---|---|
-| `state/` | Postgres DB files (`state/postgres`) + Navidrome's own index/cache/transcode-cache (`state/navidrome`). Bind-mounted into the containers via `DUONAS_STATE_DIR` in `docker-compose.yml`. | Yes — Navidrome rebuilds its index by rescanning `music/`; Postgres holds nothing important yet (see Status below). Safe to delete while containers are stopped if you want a clean slate. |
 | `music/` | Original acquired audio files (mp3) — the actual library Navidrome serves, mounted read-only via `DUONAS_MUSIC_DIR`. | No — these are the source files themselves, not derived from anything. |
 | `photos/` | Original full-resolution photos — source material for the photography pipeline. Mirrors `music/`'s role (bare name = original-media library). | No — source files. |
 | `photos-generated/` | Generated WebP thumbnails (`scripts/export-photos/upload_photo.py` output), before/after upload to R2. | Yes — regenerate by re-running the script against the matching file in `photos/`. |
 
+Postgres and Navidrome's own state (DB files, search index, transcode cache) are **not**
+a local directory — they're Docker-managed named volumes (`postgres_data`, `navidrome_data`
+in `docker-compose.yml`), inspectable via `docker volume ls` / `docker volume inspect`, not
+a folder you can browse directly. This used to be a host bind mount under a `state/`
+folder, but that broke under Rancher Desktop's WSL2 integration: bind mounts from an
+"integrated" distro get proxied through an internal path that doesn't reliably survive a
+container restart, and silently reset Navidrome's admin account/index (hit this for real,
+see git history around 2026-09-16). Named volumes sidestep that translation layer
+entirely, and work identically on real (non-WSL) NAS hardware. Both are safe to lose —
+Navidrome rebuilds its index by rescanning `music/`, and Postgres holds nothing important
+yet (see Status below).
+
 ## What real NAS hardware actually needs to run this
 
-Just an OS + Docker + Docker Compose. That's it. Everything stateful (Postgres data, Navidrome index, the actual music/photo files) lives under `DUONAS_STATE_DIR` / `DUONAS_MUSIC_DIR` (see `.env`), which you point at an external/attached drive — the drive is the only thing that has to be "big." The compute side (this repo, the containers) is intentionally tiny and disposable: if the box dies, a fresh OS + `git clone` + `docker compose up` on new hardware gets you back to where you were, as long as the external drive survives. That's the whole point of separating state (drive) from compute (containers) — see the Gemini-derived design notes in project memory for the fuller reasoning.
+Just an OS + Docker + Docker Compose. That's it. The precious, non-regenerable stuff — the
+actual music/photo originals — lives under `DUONAS_MUSIC_DIR` / `photos/` (see `.env`),
+which you point at an external/attached drive on real hardware; that drive is the only
+thing that has to be "big." Postgres/Navidrome state is disposable (see above) and doesn't
+need to live on that drive at all. The compute side (this repo, the containers) is
+intentionally tiny and disposable: if the box dies, a fresh OS + `git clone` + `docker
+compose up` on new hardware gets you back to where you were, as long as the external drive
+with the originals survives.
 
 ## Directory layout: clone `duo-li` as a sibling
 
@@ -84,13 +102,14 @@ cd duo-nas
 cp .env.example .env
 # edit .env:
 #   - set a real POSTGRES_PASSWORD
-#   - if you have an external drive mounted, point DUONAS_STATE_DIR / DUONAS_MUSIC_DIR at it
-#     (e.g. DUONAS_MUSIC_DIR=/mnt/usb1/music) — otherwise leave the ./state, ./music defaults
+#   - if you have an external drive mounted, point DUONAS_MUSIC_DIR at it
+#     (e.g. DUONAS_MUSIC_DIR=/mnt/usb1/music) — otherwise leave the ./music default
+#     (Postgres/Navidrome state doesn't need this — it's a Docker named volume, see below)
 
 docker compose up -d
 ```
 
-First-run admin setup (one-time, per machine): open `http://localhost:4533`, create the Navidrome admin account through the web UI (no CLI flow for this — it's a one-screen form).
+First-run admin setup (one-time, per machine, and again any time the `postgres_data`/`navidrome_data` named volumes get wiped): open `http://localhost:4533`, create the Navidrome admin account through the web UI (no CLI flow for this — it's a one-screen form).
 
 For the acquisition/export scripts (Python), same convention on every machine — one dedicated venv for the whole repo, never system-wide pip and never a separate venv per script folder:
 
@@ -121,5 +140,6 @@ cd ~/duo-nas && git pull                     # re-run this after every commit on
 
 ## Status
 
-Running (on the current dev machine, WSL): Postgres + Navidrome, both `127.0.0.1`-only. One real track acquired via `scripts/acquire/acquire.py`, imported into Navidrome, playback verified. `scripts/export-music/musicbrainz_lookup.py` verified against the live MusicBrainz API. `scripts/export-photos/upload_photo.py` verified end-to-end (EXIF extract → WebP thumbnail → Cloudflare R2 upload → MDX written into `duo-li`) with one real photo. Both Windows and WSL sides now use a single repo-root `.venv` (`pip install -r requirements.txt`) — no more per-script venvs. Postgres schema/usage beyond Navidrome's own tables: not started yet.
+Running (on the current dev machine, WSL): Postgres + Navidrome, both `127.0.0.1`-only, using Docker named volumes for state (see "Local directories" above — switched from a host bind mount on 2026-09-16 after Rancher Desktop's WSL2 integration silently reset Navidrome's admin account/index on a restart). One real track acquired via `scripts/acquire/acquire.py`, imported into Navidrome, playback verified. `scripts/export-music/musicbrainz_lookup.py` verified against the live MusicBrainz API. `scripts/export-photos/upload_photo.py` verified end-to-end (EXIF extract → WebP thumbnail → Cloudflare R2 upload → MDX written into `duo-li`) with two real photos. Both Windows and WSL sides now use a single repo-root `.venv` (`pip install -r requirements.txt`) — no more per-script venvs. Postgres schema/usage beyond Navidrome's own tables: not started yet.
+
 
