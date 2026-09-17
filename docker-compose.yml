@@ -15,7 +15,10 @@ services:
     image: deluan/navidrome:latest
     restart: unless-stopped
     environment:
-      ND_SCANSCHEDULE: "@every 1h"
+      # Short interval so a missed/incomplete boot-time scan (WSL2 filesystem bridge
+      # isn't always ready the instant the container starts after a host reboot) self-heals
+      # within minutes instead of requiring a manual `docker compose restart navidrome`.
+      ND_SCANSCHEDULE: "@every 5m"
       ND_LOGLEVEL: info
       ND_SESSIONTIMEOUT: 24h
     ports:
